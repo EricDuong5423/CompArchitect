@@ -73,44 +73,40 @@ merge:
 	jr $ra
 merge_sort:
 	addi $sp, $sp, -16
-	sw $ra, 12($sp)#Dia chi quay ve $ra
-	sw $a1, 8($sp)#$a1 la dau mang
-	sw $a2, 4($sp)#$a2 la cuoi mang
+	sw $ra, 0($sp)
+	sw $a1, 4($sp)
+	sw $a2, 8($sp)
 	
-	#$t0 = array.size()
 	sub $t0, $a2, $a1
+	
+	ble $t0, 4, end_merge_sort
+	
 	srl $t0, $t0, 3
 	sll $t0, $t0, 2
+	add $a2, $a1, $t0
+	sw $a2, 12($sp)
 	
-	#if(size < 1) thi ko chia doi mang nua
-	ble $t0, 1, end_merge_sort
-	
-	#$a1 = mid_array
-	add $a2, $t0, $a1
-	sw $a2, 0($sp)
-	
-	#Ð? quy ph?n bên trái
 	jal merge_sort
 	
-	#Ð? quy ph?n bên ph?i
-	lw $a1, 0($sp)
-	lw $a2, 4($sp)
+	lw $a1, 12($sp)
+	lw $a2, 8($sp)
+	
 	jal merge_sort
 	
-	#Merge hai ph?n l?i v?i nhau
-	lw $a1, 8($sp)
-	lw $a2, 4($sp)
-	lw $a3, 0($sp)
+	lw $a1, 4($sp)
+	lw $a2, 8($sp)
+	lw $a3, 12($sp)
+	
 	jal merge
 	
 	#In mang
-	lw $a1, 8($sp)
-	lw $a2, 4($sp)
+	lw $a1, 4($sp)
+	lw $a2, 8($sp)
 	jal print_array
 	
 	#Ket thuc merge_sort
 	end_merge_sort:
-	lw $ra, 12($sp)
+	lw $ra, 0($sp)
 	addi $sp, $sp, 16
 	jr $ra
 	
@@ -137,6 +133,7 @@ print_array:
 main:
 	la $a1, inputArray #$a1 = &array.begin()
 	lw $a2, inputSize #So luong phan tu
-	addi $a2, $a1, 24
+	sll $a2, $a2, 2
+	add $a2, $a2, $a1
 	#Merge_sort
 	jal merge_sort
