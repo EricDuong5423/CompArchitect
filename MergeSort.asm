@@ -2,15 +2,18 @@
 .data
 	inputArray: .word 21,35,19,25,39,44,7,33,5,34,50,2,48,12,3,13,22,28,26,42,32,27,40,23,47,31,38,46,24,14,41,8,1,18,17,10,37,36,0,16,43,29,30,11,9,15,45,20,49,4
 	inputSize:  .word 50
-	originalArraymsg: .asciiz "Mang ban dau: "
+	originalArraymsg: .asciiz "Mang ban dau : "
 	space: .asciiz " "
 	endl: .asciiz "\n"
 	tempArray: .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	seperate: .asciiz "---------------------------------------------------------------------------------------------------------------------------------------------------------"
+	seperate: .asciiz "-----------------------------------------------------------------------------------------------------------------------------------------------------------"
+	mergeMsg: .asciiz "Merge Sort "
+	colons: .asciiz " : "
+	colon: .asciiz ": "
+	aftersortArraymsg: .asciiz "Mang sau cung: "
 .text
 #------------------------------------------ Source code ------------------------------------------#
 j main
-
 #------------------------------------------ Merge Function ------------------------------------------#
 #input: $a1 = &begin, $a3 = &mid, $a2 = &end, $s1 = &tempArray#
 #output: Sorted array from &begin ----> &end#
@@ -21,8 +24,7 @@ merge:
 	addi $t1, $a3, 0
 	addi $t1, $t1, 4
 	#$s1 = &tempArray
-	lui $at, 4097
-	ori $s1, $at, 224
+	la $s1, tempArray
 	
 	#while(start <= mid && mid + 1 <= end) = while($t0 < $a3 && $t1 < $a2)
 	while:
@@ -92,8 +94,7 @@ merge:
 		j while2
 	end_merge:
 		#$s0 = &tempArray
-		lui $at, 4097
-		ori $s0, $at, 224
+		la $s0, tempArray
 		#$t0 = &begin
 		addi $t0, $a1, 0
 	save_originArray:
@@ -105,115 +106,172 @@ merge:
 		j save_originArray
 	end_save_originArray:
 	jr $ra
+#------------------------------------------------- mergesort(start, end) ------------------------------#
+#Input: $a1 = &array, $a2 = &(array + size)
+#Output: $a3 = &(array + mid)
 merge_sort:
+	#Take out 16 byte in stack
 	addi $sp, $sp, -16
+	#0->3 byte use for $ra for recursing
 	sw $ra, 0($sp)
+	#4->7 byte use for storing address of begin array
 	sw $a1, 4($sp)
+	#8->11 byte for storing address of end array
 	sw $a2, 8($sp)
 	
+	#$t0 = current_size * 4byte = *end - *start
 	sub $t0, $a2, $a1
 	
-	#bge $a1, $a2, end_merge_sort
+	#start > end ? jump ---> end_merge_sort
 	slt $at, $a1, $a2
 	beq $at, $zero, end_merge_sort
 	
+	#$t0 / 8 = size/(4 byte * 2) = mid
 	srl $t0, $t0, 3
+	#$t0 * 4 = mid * 4byte
 	sll $t0, $t0, 2
 	
+	#--------------------- first_recursion:merge_sort(start,mid) ---------------------#
+	#$a2 = &mid
 	add $a2, $a1, $t0
-	
+	#12->15 byte for storing address of mid array
 	sw $a2, 12($sp)
-	
+	#Recursion
 	jal merge_sort
 	
+	#--------------------- second_recursion:merge_sort(mid + 1,end) ---------------------#
+	#$a1 = &mid
 	lw $a1, 12($sp)
+	#$a1 = &mid + 1
 	addi $a1, $a1, 4
+	#$a2 = &end
 	lw $a2, 8($sp)
-	
-	
+	#Recursion
 	jal merge_sort
 	
+	#--------------------- merge(start,mid,end) ---------------------#
+	#$a1 = &start
 	lw $a1, 4($sp)
+	#$a2 = &end
 	lw $a2, 8($sp)
+	#$a3 = &mid
 	lw $a3, 12($sp)
-	
+	#merge
 	jal merge
 	
-	#In mang
-	
+	#--------------------- print_array ---------------------#
+	#print msg for array after nth MergeSort
+	la $a0, mergeMsg
+	li $v0, 4
+	syscall
+	#print nth
+	move $a0, $t9
+	li $v0, 1
+	syscall
+	#format for printing
+	bge $t9, 10, format2
+	format1:
+		la $a0, colons
+		li $v0, 4
+		syscall
+		j end_format
+	format2:
+		la $a0, colon
+		li $v0, 4
+		syscall
+	end_format:
+	#n++
+	addi $t9, $t9, 1
+	#print_array
 	jal print_array
-	
 	lw $a1, 4($sp)
 	lw $a2, 8($sp)
+	
 	#Ket thuc merge_sort
 	end_merge_sort:
+	#Load back the return address to $ra
 	lw $ra, 0($sp)
+	#Return 16 byte take from stack
 	addi $sp, $sp, 16
+	#Jump back to orginal address
 	jr $ra
-	
+#------------------------------------------------- print_array(&array) ------------------------------#
+#Input: $a1 = &array
+#Output: none	
 print_array:
-	#la $s0, inputArray
-	lui $at, 4097
-	ori $s0, $at, 0
-	
-	#lw $s1, inputSize
-	lui $at, 4097
-	lw $s1, 200($at)
+	#Load $s0 = &array
+	la $s0, inputArray
+	#Load $s1 = size
+	lw $s1, inputSize
 	addi $s1, $s1, -1
+	#$s1 * 4byte
 	sll $s1, $s1, 2
+	#$s1 = &(array + size - 1)
 	add $s1, $s1, $s0
 	loop_print:
-		#bgt $s0, $s1, end_print #Dieu kien dung vong lap
+		#$s0 > $s1 ? jump ---> end_print
 		slt $at, $s1, $s0
 		bne $at, $zero, end_print
-		#In phan tu a[i]
+		
+		#$a0 = array[index]
 		lw $a0, 0($s0)
 		li $v0, 1
 		syscall
-		#In " "
+		
+		#print " "
 		li $v0, 4
-		#la $a0, space
-		lui $at, 4097
-		ori $a0, $at, 219
+		la $a0, space
 		syscall
-		#i++
-		add $s0, $s0, 4
+		
+		#Index++
+		addi $s0, $s0, 4
 		j loop_print
 	end_print:
 	li $v0, 4
-	#la $a0, endl
-	lui $at, 4097
-	ori $a0, $at, 221
+	la $a0, endl
 	syscall
 	jr $ra
+#------------------------------------------------- main() ------------------------------#
 main:
-	#la $a1, inputArray #$a1 = &array.begin()
-	lui $at, 4097
-	ori $a1, $at, 0
-	#lw $a2, inputSize #So luong phan tu
-	lui $at, 4097
-	lw $a2, 200($at)
+	#$a1 = &array
+	la $a1, inputArray
+	#$a2 = &(array + size)
+	lw $a2, inputSize
 	addi $a2, $a2, -1
 	sll $a2, $a2, 2
 	add $a2, $a2, $a1
-	#In thong bao mang ban dau
+	#Print originalArraymsg
 	li $v0, 4
-	#la $a0, originalArraymsg
-	lui $at, 4097
-	ori $a0, $at, 204
+	la $a0, originalArraymsg
 	syscall
-	#In mang
+	#Print array
 	jal print_array
-	#In cach dong
+	#Print seperate
 	li $v0, 4
-	#la $a0, seperate
-	lui $at, 4097
-	ori $a0, $at, 424
+	la $a0, seperate
 	syscall
+	#Print endl
 	li $v0, 4
-	#la $a0, endl
-	lui $at, 4097
-	ori $a0, $at, 221
+	la $a0, endl
 	syscall
+	
 	#Merge_sort
+	li $t9, 1
 	jal merge_sort
+	#Print seperate
+	li $v0, 4
+	la $a0, seperate
+	syscall
+	#Print endl
+	li $v0, 4
+	la $a0, endl
+	syscall
+	#Print aftersortArraymsg
+	li $v0, 4
+	la $a0, aftersortArraymsg
+	syscall
+	#Print array
+	jal print_array
+	#End program
+	li $v0, 10
+	syscall
