@@ -1,11 +1,11 @@
 #------------------------------------------ Data ------------------------------------------#
-.data
-	inputArray: .word 21,35,19,25,39,44,7,33,5,34,50,2,48,12,3,13,22,28,26,42,32,27,40,23,47,31,38,46,24,14,41,8,1,18,17,10,37,36,0,16,43,29,30,11,9,15,45,20,49,4
+.data 0x10010000
+	inputArray: .float -181.362, -704.334, -712.39, -699.203, 114.823, -262.384, 294.34, 901.951, -139.468, -714.727, -225.226, -84.334, 353.22, -315.223, -296.791, -471.362, 326.884, -317.067, 607.427, -556.419, 308.33, -90.64, 294.714, 900.673, 224.939, 192.653, -459.459, -319.214, -461.755, -480.98, 583.853, -110.632, -951.941, 131.183, 996.467, 414.717, 144.456, 455.796, -644.346, -360.696, 673.293, -627.565, 580.627, -986.235, 705.122, 347.513, -269.983, 245.913, -687.996, 823.05
 	inputSize:  .word 50
 	originalArraymsg: .asciiz "Mang ban dau : "
 	space: .asciiz " "
 	endl: .asciiz "\n"
-	tempArray: .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	tempArray: .float 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	seperate: .asciiz "-----------------------------------------------------------------------------------------------------------------------------------------------------------"
 	mergeMsg: .asciiz "Merge Sort "
 	colons: .asciiz " : "
@@ -24,7 +24,8 @@ merge:
 	addi $t1, $a3, 0
 	addi $t1, $t1, 4
 	#$s1 = &tempArray
-	la $s1, tempArray
+	lui $s1, 0x00001001
+	ori $s1, 0x000000e0
 	
 	#while(start <= mid && mid + 1 <= end) = while($t0 < $a3 && $t1 < $a2)
 	while:
@@ -36,22 +37,22 @@ merge:
 		bne $at, $zero, while2
 		
 		#$t2 = array[left]
-		lw $t2, 0($t0)
+		l.s $f2, 0($t0)
 		#$t3 = array[right]
-		lw $t3, 0($t1)
+		l.s $f3, 0($t1)
 		#$t2 >= $t3 ? jump ---> left or right
-		slt $at, $t3, $t2
-		beq $at, $zero, left
+		c.lt.s $f2, $f3
+		bc1t left
 		j right
 		left:
 			#$tempArray[tempIndex] = $t2
-			sw $t2, 0($s1) 
+			s.s $f2, 0($s1) 
 			#left++
 			addi $t0, $t0, 4
 			j end_cond
 		right: 
 			#$tempArray[tempIndex] = $t3
-			sw $t3, 0($s1)
+			s.s $f3, 0($s1)
 			#right++
 			addi $t1, $t1, 4
 		end_cond:
@@ -65,9 +66,9 @@ merge:
 		bne $at, $zero, end_merge
 		
 		#$t3 = inputArray[right]
-		lw $t3, 0($t1)
+		l.s $f3, 0($t1)
 		#tempArray[tempIndex] = $t3
-		sw $t3, 0($s1)
+		s.s $f3, 0($s1)
 		
 		#right++
 		addi $t1, $t1, 4
@@ -82,9 +83,9 @@ merge:
 		bne $at, $zero, end_merge
 		
 		#$t2 = inputArray[left]
-		lw $t2, 0($t0)
+		l.s $f2, 0($t0)
 		#tempArray[tempIndex] = $t3
-		sw $t2, 0($s1) 
+		s.s $f2, 0($s1) 
 		
 		#left++
 		addi $t0, $t0, 4
@@ -94,13 +95,14 @@ merge:
 		j while2
 	end_merge:
 		#$s0 = &tempArray
-		la $s0, tempArray
+		lui $s0, 0x00001001
+		ori $s0, 0x000000e0
 		#$t0 = &begin
 		addi $t0, $a1, 0
 	save_originArray:
 		beq $s0, $s1, end_save_originArray
-		lw $t1, 0($s0)
-		sw $t1, 0($t0)
+		l.s $f1, 0($s0)
+		s.s $f1, 0($t0)
 		addi $t0, $t0, 4
 		addi $s0, $s0, 4
 		j save_originArray
@@ -161,7 +163,8 @@ merge_sort:
 	
 	#--------------------- print_array ---------------------#
 	#print msg for array after nth MergeSort
-	la $a0, mergeMsg
+	lui $a0, 0x00001001
+	ori $a0, 0x00000244
 	li $v0, 4
 	syscall
 	#print nth
@@ -171,12 +174,14 @@ merge_sort:
 	#format for printing
 	bge $t9, 10, format2
 	format1:
-		la $a0, colons
+		lui $a0, 0x00001001
+		ori $a0, 0x00000250
 		li $v0, 4
 		syscall
 		j end_format
 	format2:
-		la $a0, colon
+		lui $a0, 0x00001001
+		ori $a0, 0x00000254
 		li $v0, 4
 		syscall
 	end_format:
@@ -200,9 +205,11 @@ merge_sort:
 #Output: none	
 print_array:
 	#Load $s0 = &array
-	la $s0, inputArray
+	lui $s0, 0x00001001
+	ori $s0, 0x00000000
 	#Load $s1 = size
-	lw $s1, inputSize
+	lui $at, 0x00001001
+	lw $s1, 0x000000c8($at)
 	addi $s1, $s1, -1
 	#$s1 * 4byte
 	sll $s1, $s1, 2
@@ -214,13 +221,14 @@ print_array:
 		bne $at, $zero, end_print
 		
 		#$a0 = array[index]
-		lw $a0, 0($s0)
-		li $v0, 1
+		l.s $f12, 0($s0)
+		li $v0, 2
 		syscall
 		
 		#print " "
 		li $v0, 4
-		la $a0, space
+		lui $a0, 0x00001001
+		ori $a0, 0x000000dc
 		syscall
 		
 		#Index++
@@ -228,31 +236,37 @@ print_array:
 		j loop_print
 	end_print:
 	li $v0, 4
-	la $a0, endl
+	lui $a0, 0x00001001
+	ori $a0, 0x000000de
 	syscall
 	jr $ra
 #------------------------------------------------- main() ------------------------------#
 main:
 	#$a1 = &array
-	la $a1, inputArray
+	lui $a1, 0x00001001
+	ori $a1, 0x00000000
 	#$a2 = &(array + size)
-	lw $a2, inputSize
+	lui $at, 0x00001001
+	lw $a2, 0x000000c8($at)
 	addi $a2, $a2, -1
 	sll $a2, $a2, 2
 	add $a2, $a2, $a1
 	#Print originalArraymsg
 	li $v0, 4
-	la $a0, originalArraymsg
+	lui $a0, 0x00001001
+	ori $a0, 0x000000cc
 	syscall
 	#Print array
 	jal print_array
 	#Print seperate
 	li $v0, 4
-	la $a0, seperate
+	lui $a0, 0x00001001
+	ori $a0, 0x000001a8
 	syscall
 	#Print endl
 	li $v0, 4
-	la $a0, endl
+	lui $a0, 0x00001001
+	ori $a0, 0x000000de
 	syscall
 	
 	#Merge_sort
@@ -260,15 +274,18 @@ main:
 	jal merge_sort
 	#Print seperate
 	li $v0, 4
-	la $a0, seperate
+	lui $a0, 0x00001001
+	ori $a0, 0x000001a8
 	syscall
 	#Print endl
 	li $v0, 4
-	la $a0, endl
+	lui $a0, 0x00001001
+	ori $a0, 0x000000de
 	syscall
 	#Print aftersortArraymsg
 	li $v0, 4
-	la $a0, aftersortArraymsg
+	lui $a0, 0x00001001
+	ori $a0, 0x00000257
 	syscall
 	#Print array
 	jal print_array
