@@ -32,26 +32,26 @@ merge:
 		#start > mid ? jump ---> while1 or continue while
 		slt $at, $a3, $t0 
 		bne $at, $zero, while1
-		#mid > end ? jump ---> while2 or continue while
+		#mid + 1 > end ? jump ---> while2 or continue while
 		slt $at, $a2, $t1
 		bne $at, $zero, while2
 		
-		#$t2 = array[left]
+		#$f2 = array[left]
 		l.s $f2, 0($t0)
-		#$t3 = array[right]
+		#$f3 = array[right]
 		l.s $f3, 0($t1)
-		#$t2 >= $t3 ? jump ---> left or right
+		#$f2 < $f3 ? jump ---> left or right
 		c.lt.s $f2, $f3
 		bc1t left
 		j right
 		left:
-			#$tempArray[tempIndex] = $t2
+			#$tempArray[tempIndex] = $f2
 			s.s $f2, 0($s1) 
 			#left++
 			addi $t0, $t0, 4
 			j end_cond
 		right: 
-			#$tempArray[tempIndex] = $t3
+			#$tempArray[tempIndex] = $f3
 			s.s $f3, 0($s1)
 			#right++
 			addi $t1, $t1, 4
@@ -59,15 +59,15 @@ merge:
 			#tempIndex++
 			addi $s1, $s1, 4
 			j while
-	#Case 1: mid <= end && start > mid
+	#Case 1: mid + 1 <= end && start > mid
 	while1:
-		#mid > end ? jump ---> end_merge or continue
+		#mid + 1 > end ? jump ---> end_merge or continue
 		slt $at, $a2, $t1
 		bne $at, $zero, end_merge
 		
-		#$t3 = inputArray[right]
+		#$f3 = inputArray[right]
 		l.s $f3, 0($t1)
-		#tempArray[tempIndex] = $t3
+		#tempArray[tempIndex] = $f3
 		s.s $f3, 0($s1)
 		
 		#right++
@@ -76,15 +76,15 @@ merge:
 		addi $s1, $s1, 4
 		
 		j while1
-	#Case 2: start <= mid && mid > end
+	#Case 2: start <= mid && mid + 1 > end
 	while2:
 		#start > mid ? jump ---> end_merge or continue
 		slt $at, $a3, $t0
 		bne $at, $zero, end_merge
 		
-		#$t2 = inputArray[left]
+		#$f2 = inputArray[left]
 		l.s $f2, 0($t0)
-		#tempArray[tempIndex] = $t3
+		#tempArray[tempIndex] = $f3
 		s.s $f2, 0($s1) 
 		
 		#left++
