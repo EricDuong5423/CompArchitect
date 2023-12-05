@@ -172,7 +172,8 @@ merge_sort:
 	li $v0, 1
 	syscall
 	#format for printing
-	bge $t9, 10, format2
+	slti $at, $t9, 10
+	beq $at, $zero, format2
 	format1:
 		lui $a0, 0x00001001
 		ori $a0, 0x00000250
@@ -189,8 +190,6 @@ merge_sort:
 	addi $t9, $t9, 1
 	#print_array
 	jal print_array
-	lw $a1, 4($sp)
-	lw $a2, 8($sp)
 	
 	#Ket thuc merge_sort
 	end_merge_sort:
